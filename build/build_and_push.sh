@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set +x
 
 : ${REPO:=$1/compose-unpacker}
 : ${TAG:=$2}
