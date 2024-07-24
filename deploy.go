@@ -30,11 +30,10 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Bool("skipTLSVerify", cmd.SkipTLSVerify).
 		Msg("Deploying Compose stack from Git repository")
 
-	defer dockerLogout(cmd.Registry)
-	err := dockerLogin(cmd.Registry)
-	if err != nil {
-		return err
+	if err := dockerLogin(cmd.Registry); err != nil {
+		return fmt.Errorf("an error occured in docker login. Error: %w", err)
 	}
+	defer dockerLogout(cmd.Registry)
 
 	if cmd.User != "" && cmd.Password != "" {
 		log.Info().
@@ -131,7 +130,7 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			ProjectName: cmd.ProjectName,
 			Env:         cmd.Env,
 		},
-		ForceRecreate: true,
+		ForceRecreate: cmd.ForceRecreateStack,
 	})
 
 	if err != nil {
@@ -152,11 +151,11 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Str("destination", cmd.Destination).
 		Msg("Deploying Swarm stack from a Git repository")
 
-	defer dockerLogout(cmd.Registry)
 	err := dockerLogin(cmd.Registry)
 	if err != nil {
-		return err
+		return fmt.Errorf("an error occured in swarm docker login. Error: %w", err)
 	}
+	defer dockerLogout(cmd.Registry)
 
 	if cmd.User != "" && cmd.Password != "" {
 		log.Info().

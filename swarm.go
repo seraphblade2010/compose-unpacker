@@ -17,9 +17,16 @@ func deploySwarmStack(cmd SwarmDeployCommand, clonePath string) error {
 	} else {
 		args = append(args, "stack", "deploy", "--with-registry-auth")
 	}
-	if !cmd.Pull {
-		args = append(args, "--resolve-image=never")
+
+	resolveImageArgs := "--resolve-image=never"
+	if cmd.Pull {
+		resolveImageArgs = "--resolve-image=changed"
 	}
+
+	if cmd.ForceRecreateStack {
+		resolveImageArgs = "--resolve-image=always"
+	}
+	args = append(args, resolveImageArgs)
 
 	for _, cfile := range cmd.ComposeRelativeFilePaths {
 		args = append(args, "--compose-file", path.Join(clonePath, cfile))
