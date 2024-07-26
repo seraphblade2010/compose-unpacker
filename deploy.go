@@ -192,7 +192,7 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 	}
 
 	forceUpdate := false
-	if len(runningServices) > 0 {
+	if cmd.ForceRecreateStack && len(runningServices) > 0 {
 		// To determine whether the current service needs to force update, it
 		// is more reliable to check if there is a created service with the
 		// stack name rather than to check if there is an existing git repository.
@@ -261,9 +261,8 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		}
 
 		for _, updatedServiceID := range updatedServiceIDs {
-			_, ok := runningServices[updatedServiceID]
-			if ok {
-				_ = updateService(updatedServiceID)
+			if _, ok := runningServices[updatedServiceID]; ok {
+				_ = updateService(updatedServiceID, forceUpdate)
 			}
 		}
 	}

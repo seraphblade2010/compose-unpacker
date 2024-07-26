@@ -18,15 +18,9 @@ func deploySwarmStack(cmd SwarmDeployCommand, clonePath string) error {
 		args = append(args, "stack", "deploy", "--with-registry-auth")
 	}
 
-	resolveImageArgs := "--resolve-image=never"
-	if cmd.Pull {
-		resolveImageArgs = "--resolve-image=changed"
+	if !cmd.Pull {
+		args = append(args, "--resolve-image=never")
 	}
-
-	if cmd.ForceRecreateStack {
-		resolveImageArgs = "--resolve-image=always"
-	}
-	args = append(args, resolveImageArgs)
 
 	for _, cfile := range cmd.ComposeRelativeFilePaths {
 		args = append(args, "--compose-file", path.Join(clonePath, cfile))
@@ -75,22 +69,30 @@ func checkRunningService(projectName string) ([]string, error) {
 	return serviceIDs, nil
 }
 
-func updateService(serviceID string) error {
+func updateService(serviceID string, forceRecreate bool) error {
 	command := getDockerBinaryPath()
-	args := []string{"--config", PORTAINER_DOCKER_CONFIG_PATH, "service", "update", serviceID, "--force"}
+	args := []string{"--config", PORTAINER_DOCKER_CONFIG_PATH, "service", "update", serviceID}
+	if forceRecreate {
+		args = append(args, "--force")
+	}
 
 	log.Info().
 		Strs("args", args).
 		Msg("Updating Swarm service")
-	_, err := runCommand(command, args)
+
+	out, err := runCommand(command, args)
 	if err != nil {
 		log.Error().
 			Err(err).
+			Str("standard_output", out).
+			Str("context", "SwarmDeployerUpdateService").
 			Msg("Failed to update swarm services")
 		return err
 	}
 
 	log.Info().
+		Str("standard_output", out).
+		Str("context", "SwarmDeployerUpdateService").
 		Msg("Update stack service completed")
 	return nil
 }
