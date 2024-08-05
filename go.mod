@@ -7,7 +7,7 @@ toolchain go1.22.5
 require (
 	github.com/alecthomas/kong v0.6.1
 	github.com/go-git/go-git/v5 v5.11.0
-	github.com/portainer/portainer/pkg/libstack v0.0.0-20230626042119-89c1d0e33707
+	github.com/portainer/portainer/pkg/libstack v0.0.0-20230831224222-4560a53317b0
 	github.com/rs/zerolog v1.28.0
 )
 

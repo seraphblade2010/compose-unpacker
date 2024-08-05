@@ -67,6 +67,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/portainer/portainer/pkg/libstack v0.0.0-20230626042119-89c1d0e33707 h1:SmwWcOqHpbHj+4tZNR9AV4VfLWmbelkaAcWYuMkQ9G8=
 github.com/portainer/portainer/pkg/libstack v0.0.0-20230626042119-89c1d0e33707/go.mod h1:+zCK2UbsH6A3yEGi0yZ45ec5VFRP7svob5Q2lW6LFgk=
+github.com/portainer/portainer/pkg/libstack v0.0.0-20230831224222-4560a53317b0 h1:BsSUEHzLdwxQ32QS5qdFYkWT3e7SqCLfrdeW69s1Ku4=
+github.com/portainer/portainer/pkg/libstack v0.0.0-20230831224222-4560a53317b0/go.mod h1:+zCK2UbsH6A3yEGi0yZ45ec5VFRP7svob5Q2lW6LFgk=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
 github.com/rs/xid v1.4.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=

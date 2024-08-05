@@ -17,6 +17,7 @@ func deploySwarmStack(cmd SwarmDeployCommand, clonePath string) error {
 	} else {
 		args = append(args, "stack", "deploy", "--with-registry-auth")
 	}
+
 	if !cmd.Pull {
 		args = append(args, "--resolve-image=never")
 	}
@@ -68,22 +69,30 @@ func checkRunningService(projectName string) ([]string, error) {
 	return serviceIDs, nil
 }
 
-func updateService(serviceID string) error {
+func updateService(serviceID string, forceRecreate bool) error {
 	command := getDockerBinaryPath()
-	args := []string{"--config", PORTAINER_DOCKER_CONFIG_PATH, "service", "update", serviceID, "--force"}
+	args := []string{"--config", PORTAINER_DOCKER_CONFIG_PATH, "service", "update", serviceID}
+	if forceRecreate {
+		args = append(args, "--force")
+	}
 
 	log.Info().
 		Strs("args", args).
 		Msg("Updating Swarm service")
-	_, err := runCommand(command, args)
+
+	out, err := runCommand(command, args)
 	if err != nil {
 		log.Error().
 			Err(err).
+			Str("standard_output", out).
+			Str("context", "SwarmDeployerUpdateService").
 			Msg("Failed to update swarm services")
 		return err
 	}
 
 	log.Info().
+		Str("standard_output", out).
+		Str("context", "SwarmDeployerUpdateService").
 		Msg("Update stack service completed")
 	return nil
 }

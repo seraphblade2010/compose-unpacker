@@ -23,6 +23,7 @@ type DeployCommand struct {
 	Password                 string   `help:"Password or PAT for Git authentication" short:"p"`
 	Keep                     bool     `help:"Keep stack folder" short:"k"`
 	SkipTLSVerify            bool     `help:"Skip TLS verification for git" name:"skip-tls-verify"`
+	ForceRecreateStack       bool     `help:"Force to recreate the target stack regardless whether the image hash changes" name:"force-recreate"`
 	Env                      []string `help:"OS ENV for stack" example:"key=value"`
 	Registry                 []string `help:"Registry credentials" name:"registry"`
 	GitRepository            string   `arg:"" help:"Git repository to deploy from." name:"git-repo"`
@@ -39,6 +40,7 @@ type SwarmDeployCommand struct {
 	Prune                    bool     `help:"Prune services during deployment" short:"r"`
 	Keep                     bool     `help:"Keep stack folder" short:"k"`
 	SkipTLSVerify            bool     `help:"Skip TLS verification for git" name:"skip-tls-verify"`
+	ForceRecreateStack       bool     `help:"Force to recreate the target stack regardless whether the image hash changes" name:"force-recreate"`
 	Env                      []string `help:"OS ENV for stack."`
 	Registry                 []string `help:"Registry credentials" name:"registry"`
 	GitRepository            string   `arg:"" help:"Git repository to deploy from." name:"git-repo"`
