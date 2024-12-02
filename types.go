@@ -21,6 +21,7 @@ type CommandExecutionContext struct {
 type DeployCommand struct {
 	User                     string   `help:"Username for Git authentication." short:"u"`
 	Password                 string   `help:"Password or PAT for Git authentication" short:"p"`
+	Prune                    bool     `help:"Prune services during deployment" short:"r"`
 	Keep                     bool     `help:"Keep stack folder" short:"k"`
 	SkipTLSVerify            bool     `help:"Skip TLS verification for git" name:"skip-tls-verify"`
 	ForceRecreateStack       bool     `help:"Force to recreate the target stack regardless whether the image hash changes" name:"force-recreate"`
