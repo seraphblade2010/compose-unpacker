@@ -29,6 +29,10 @@ build: binary download-binaries
 image: build
 	docker build -f build/$(PLATFORM)/Dockerfile -t $(image) .
 
+CE=develop
+upgrade-libportainer: ## Upgrade the portainer-ce dependency ; use `make upgrade-libportainer CE="branch/ref/on/CE"` to reference any CE branch
+	GOPROXY=direct go get -v github.com/portainer/portainer@$(CE) && go mod tidy -v
+
 clean:
 	rm -rf $(dist)
 	rm -rf .tmp
