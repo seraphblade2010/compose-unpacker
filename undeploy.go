@@ -17,7 +17,8 @@ func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Strs("composePath", cmd.ComposeRelativeFilePaths).
 		Msg("Undeploying Compose stack from Git repository")
 
-	if strings.LastIndex(cmd.GitRepository, "/") == -1 {
+	i := strings.LastIndex(cmd.GitRepository, "/")
+	if i == -1 {
 		log.Error().
 			Str("repository", cmd.GitRepository).
 			Msg("Invalid Git repository URL")
@@ -27,13 +28,19 @@ func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 
 	mountPath := makeWorkingDir(cmd.Destination, cmd.ProjectName)
 
-	deployer := compose.NewComposeDeployer()
+	deployer, err := compose.NewComposeDeployer(BIN_PATH, PORTAINER_DOCKER_CONFIG_PATH)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create Compose deployer")
+
+		return errDeployComposeFailure
+	}
 
 	log.Debug().
 		Str("projectName", cmd.ProjectName).
 		Msg("Undeploying Compose stack")
 
-	if err := deployer.Remove(cmdCtx.context, cmd.ProjectName, nil, libstack.RemoveOptions{}); err != nil {
+	err = deployer.Remove(cmdCtx.context, cmd.ProjectName, nil, libstack.Options{})
+	if err != nil {
 		log.Error().
 			Err(err).
 			Msg("Failed to remove Compose stack")
@@ -43,7 +50,8 @@ func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 	log.Info().Msg("Compose stack remove complete")
 
 	if !cmd.Keep { //stack stop request
-		if err := os.RemoveAll(mountPath); err != nil {
+		err = os.RemoveAll(mountPath)
+		if err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to remove Compose stack project folder")
@@ -66,13 +74,15 @@ func (cmd *SwarmUndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 
 	args := make([]string, 0)
 	args = append(args, "stack", "rm", cmd.ProjectName)
-	if err := runCommandAndCaptureStdErr(command, args, nil, ""); err != nil {
+	err := runCommandAndCaptureStdErr(command, args, nil, "")
+	if err != nil {
 		return err
 	}
 
 	mountPath := makeWorkingDir(cmd.Destination, cmd.ProjectName)
 	if !cmd.Keep { //stack stop request
-		if err := os.RemoveAll(mountPath); err != nil {
+		err = os.RemoveAll(mountPath)
+		if err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to remove Compose stack project folder")

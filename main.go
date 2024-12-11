@@ -24,7 +24,8 @@ func main() {
 	log.SetLoggingLevel(log.Level(cli.LogLevel))
 
 	cmdCtx := NewCommandExecutionContext(ctx)
-	if err := cliCtx.Run(cmdCtx); err != nil {
+	err := cliCtx.Run(cmdCtx)
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(UNPACKER_EXIT_ERROR)
 	}
