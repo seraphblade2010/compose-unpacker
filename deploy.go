@@ -87,6 +87,7 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			Auth:            getAuth(cmd.User, cmd.Password),
 			Depth:           1,
 			InsecureSkipTLS: cmd.SkipTLSVerify,
+			Tags:            git.NoTags,
 		}
 
 		log.Info().
@@ -229,6 +230,7 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			Auth:            getAuth(cmd.User, cmd.Password),
 			Depth:           100,
 			InsecureSkipTLS: cmd.SkipTLSVerify,
+			Tags:            git.NoTags,
 		}
 
 		log.Info().
