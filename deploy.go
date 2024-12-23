@@ -11,11 +11,13 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/portainer/portainer/pkg/libstack"
+	"github.com/portainer/portainer/pkg/libstack/compose"
+
+	"github.com/docker/cli/cli/config/types"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/portainer/portainer/pkg/libstack"
-	"github.com/portainer/portainer/pkg/libstack/compose"
 	"github.com/rs/zerolog/log"
 )
 
@@ -30,11 +32,6 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Bool("skipTLSVerify", cmd.SkipTLSVerify).
 		Msg("Deploying Compose stack from Git repository")
 
-	if err := dockerLogin(cmd.Registry); err != nil {
-		return fmt.Errorf("an error occured in docker login. Error: %w", err)
-	}
-	defer dockerLogout(cmd.Registry)
-
 	if cmd.User != "" && cmd.Password != "" {
 		log.Info().
 			Str("user", cmd.User).
@@ -43,7 +40,6 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 
 	i := strings.LastIndex(cmd.GitRepository, "/")
 	if i == -1 {
-
 		log.Error().
 			Str("repository", cmd.GitRepository).
 			Msg("Invalid Git repository URL")
@@ -57,11 +53,9 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 
 	mountPath := makeWorkingDir(cmd.Destination, cmd.ProjectName)
 	clonePath := path.Join(mountPath, repositoryName)
-	if !cmd.Keep { //stack create request
-		_, err := os.Stat(mountPath)
-		if err == nil {
-			err = os.RemoveAll(mountPath)
-			if err != nil {
+	if !cmd.Keep { // Stack create request
+		if _, err := os.Stat(mountPath); err == nil {
+			if err := os.RemoveAll(mountPath); err != nil {
 				log.Error().
 					Err(err).
 					Msg("Failed to remove previous directory")
@@ -69,8 +63,7 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			}
 		}
 
-		err = os.MkdirAll(mountPath, 0755)
-		if err != nil {
+		if err := os.MkdirAll(mountPath, 0755); err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to create destination directory")
@@ -97,8 +90,7 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			Int("depth", gitOptions.Depth).
 			Msg("Cloning git repository")
 
-		_, err = git.PlainCloneContext(cmdCtx.context, clonePath, false, &gitOptions)
-		if err != nil {
+		if _, err := git.PlainCloneContext(cmdCtx.context, clonePath, false, &gitOptions); err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to clone Git repository")
@@ -106,13 +98,7 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		}
 	}
 
-	deployer, err := compose.NewComposeDeployer(BIN_PATH, PORTAINER_DOCKER_CONFIG_PATH)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Failed to create Compose deployer")
-		return errDeployComposeFailure
-	}
+	deployer := compose.NewComposeDeployer()
 
 	composeFilePaths := make([]string, len(cmd.ComposeRelativeFilePaths))
 	for i := 0; i < len(cmd.ComposeRelativeFilePaths); i++ {
@@ -125,16 +111,35 @@ func (cmd *DeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Str("projectName", cmd.ProjectName).
 		Msg("Deploying Compose stack")
 
-	err = deployer.Deploy(cmdCtx.context, composeFilePaths, libstack.DeployOptions{
+	var registries []types.AuthConfig
+
+	for _, r := range cmd.Registry {
+		credentials := strings.Split(r, ":")
+		if len(credentials) != 3 {
+			log.Warn().
+				Str("registry", r).
+				Msg("Registry is malformed, skipping login")
+
+			continue
+		}
+
+		registries = append(registries, types.AuthConfig{
+			Username:      credentials[0],
+			Password:      credentials[1],
+			ServerAddress: credentials[2],
+		})
+	}
+
+	if err := deployer.Deploy(cmdCtx.context, composeFilePaths, libstack.DeployOptions{
 		Options: libstack.Options{
 			WorkingDir:  clonePath,
 			ProjectName: cmd.ProjectName,
 			Env:         cmd.Env,
+			Registries:  registries,
 		},
 		ForceRecreate: cmd.ForceRecreateStack,
-	})
-
-	if err != nil {
+		RemoveOrphans: cmd.Prune,
+	}); err != nil {
 		log.Error().
 			Err(err).
 			Msg("Failed to deploy Compose stack")
@@ -152,8 +157,7 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		Str("destination", cmd.Destination).
 		Msg("Deploying Swarm stack from a Git repository")
 
-	err := dockerLogin(cmd.Registry)
-	if err != nil {
+	if err := dockerLogin(cmd.Registry); err != nil {
 		return fmt.Errorf("an error occured in swarm docker login. Error: %w", err)
 	}
 	defer dockerLogout(cmd.Registry)
@@ -201,19 +205,17 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 		log.Info().Msg("Set to force update")
 	}
 
-	if !cmd.Keep { //stack create request
-		_, err := os.Stat(mountPath)
-		if err == nil {
-			err = os.RemoveAll(mountPath)
-			if err != nil {
+	if !cmd.Keep { // Stack create request
+		if _, err := os.Stat(mountPath); err == nil {
+			if err := os.RemoveAll(mountPath); err != nil {
 				log.Error().
 					Err(err).
 					Msg("Failed to remove previous directory")
 				return errDeployComposeFailure
 			}
 		}
-		err = os.MkdirAll(mountPath, 0755)
-		if err != nil {
+
+		if err := os.MkdirAll(mountPath, 0755); err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to create destination directory")
@@ -228,7 +230,7 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			URL:             cmd.GitRepository,
 			ReferenceName:   plumbing.ReferenceName(cmd.Reference),
 			Auth:            getAuth(cmd.User, cmd.Password),
-			Depth:           100,
+			Depth:           1,
 			InsecureSkipTLS: cmd.SkipTLSVerify,
 			Tags:            git.NoTags,
 		}
@@ -240,17 +242,16 @@ func (cmd *SwarmDeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 			Int("depth", gitOptions.Depth).
 			Msg("Cloning git repository")
 
-		_, err = git.PlainCloneContext(cmdCtx.context, clonePath, false, &gitOptions)
-		if err != nil {
+		if _, err = git.PlainCloneContext(cmdCtx.context, clonePath, false, &gitOptions); err != nil {
 			log.Error().
 				Err(err).
 				Msg("Failed to clone Git repository")
+
 			return errDeployComposeFailure
 		}
 	}
 
-	err = deploySwarmStack(*cmd, clonePath)
-	if err != nil {
+	if err := deploySwarmStack(*cmd, clonePath); err != nil {
 		return err
 	}
 
@@ -288,16 +289,15 @@ func dockerLogin(registries []string) error {
 		args := make([]string, 0)
 		args = append(args, "--config", PORTAINER_DOCKER_CONFIG_PATH, "login", "--username", credentials[0], "--password", credentials[1], credentials[2])
 
-		err := runCommandAndCaptureStdErr(command, args, nil, "")
-		if err != nil {
+		if err := runCommandAndCaptureStdErr(command, args, nil, ""); err != nil {
 			log.Warn().
 				Err(err).
-				Msg(fmt.Sprintf("Docker login %s failed. Skip login it.", credentials[2]))
+				Msgf("Docker login %s failed, skipping login", credentials[2])
 
 			continue
 		}
-		log.Info().
-			Msg(fmt.Sprintf("Docker login %s successed", credentials[2]))
+
+		log.Info().Msgf("Docker login %s succedeed", credentials[2])
 	}
 
 	return nil
@@ -311,7 +311,7 @@ func dockerLogout(registries []string) error {
 		if len(credentials) != 3 {
 			log.Warn().
 				Str("registry", registry).
-				Msg("registry is malformed. Skip logout it.")
+				Msg("Registry is malformed, skipping logout")
 
 			continue
 		}
@@ -319,16 +319,15 @@ func dockerLogout(registries []string) error {
 		args := make([]string, 0)
 		args = append(args, "--config", PORTAINER_DOCKER_CONFIG_PATH, "logout", credentials[2])
 
-		err := runCommandAndCaptureStdErr(command, args, nil, "")
-		if err != nil {
+		if err := runCommandAndCaptureStdErr(command, args, nil, ""); err != nil {
 			log.Warn().
 				Err(err).
-				Msg(fmt.Sprintf("Docker logout %s failed. Skip logout it.", credentials[2]))
+				Msgf("Docker logout %s failed, skipping logout", credentials[2])
 
 			continue
 		}
-		log.Info().
-			Msg(fmt.Sprintf("Docker logout %s successed", credentials[2]))
+
+		log.Info().Msgf("Docker logout %s succedeed", credentials[2])
 	}
 
 	return nil
@@ -336,6 +335,7 @@ func dockerLogout(registries []string) error {
 
 func runCommandAndCaptureStdErr(command string, args []string, env []string, workingDir string) error {
 	var stderr bytes.Buffer
+
 	cmd := exec.Command(command, args...)
 	cmd.Stderr = &stderr
 	cmd.Dir = workingDir
@@ -345,10 +345,10 @@ func runCommandAndCaptureStdErr(command string, args []string, env []string, wor
 		cmd.Env = append(cmd.Env, env...)
 	}
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return errors.New(stderr.String())
 	}
+
 	return nil
 }
 
@@ -357,12 +357,12 @@ func runCommand(command string, args []string) (string, error) {
 		stderr bytes.Buffer
 		stdout bytes.Buffer
 	)
+
 	cmd := exec.Command(command, args...)
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return stdout.String(), errors.New(stderr.String())
 	}
 
@@ -370,16 +370,18 @@ func runCommand(command string, args []string) (string, error) {
 }
 
 func getAuth(username, password string) *http.BasicAuth {
-	if password != "" {
-		if username == "" {
-			username = "token"
-		}
-		return &http.BasicAuth{
-			Username: username,
-			Password: password,
-		}
+	if password == "" {
+		return nil
 	}
-	return nil
+
+	if username == "" {
+		username = "token"
+	}
+
+	return &http.BasicAuth{
+		Username: username,
+		Password: password,
+	}
 }
 
 func makeWorkingDir(target, stackName string) string {
