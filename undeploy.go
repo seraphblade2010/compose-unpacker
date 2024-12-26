@@ -14,7 +14,7 @@ import (
 func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 	log.Info().
 		Str("repository", cmd.GitRepository).
-		Strs("composePath", cmd.ComposeRelativeFilePaths).
+		Strs("compose_path", cmd.ComposeRelativeFilePaths).
 		Msg("Undeploying Compose stack from Git repository")
 
 	if strings.LastIndex(cmd.GitRepository, "/") == -1 {
@@ -30,10 +30,11 @@ func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 	deployer := compose.NewComposeDeployer()
 
 	log.Debug().
-		Str("projectName", cmd.ProjectName).
+		Str("project_name", cmd.ProjectName).
+		Bool("remove_volumes", cmd.RemoveVolumes).
 		Msg("Undeploying Compose stack")
 
-	if err := deployer.Remove(cmdCtx.context, cmd.ProjectName, nil, libstack.RemoveOptions{}); err != nil {
+	if err := deployer.Remove(cmdCtx.context, cmd.ProjectName, nil, libstack.RemoveOptions{Volumes: cmd.RemoveVolumes}); err != nil {
 		log.Error().
 			Err(err).
 			Msg("Failed to remove Compose stack")
@@ -55,7 +56,7 @@ func (cmd *UndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 
 func (cmd *SwarmUndeployCommand) Run(cmdCtx *CommandExecutionContext) error {
 	log.Info().
-		Str("stack name", cmd.ProjectName).
+		Str("stack_name", cmd.ProjectName).
 		Str("destination", cmd.Destination).
 		Msg("Undeploying Swarm stack from Git repository")
 
