@@ -52,9 +52,10 @@ type SwarmDeployCommand struct {
 }
 
 type UndeployCommand struct {
-	User     string `help:"Username for Git authentication." short:"u"`
-	Password string `help:"Password or PAT for Git authentication" short:"p"`
-	Keep     bool   `help:"Keep stack folder" short:"k"`
+	User          string `help:"Username for Git authentication." short:"u"`
+	Password      string `help:"Password or PAT for Git authentication" short:"p"`
+	Keep          bool   `help:"Keep stack folder" short:"k"`
+	RemoveVolumes bool   `help:"Remove volumes" short:"v"`
 
 	GitRepository            string   `arg:"" help:"Git repository to deploy from." name:"git-repo"`
 	ProjectName              string   `arg:"" help:"Name of the Compose stack." name:"project-name"`
