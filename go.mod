@@ -1,6 +1,6 @@
 module github.com/portainer/compose-unpacker
 
-go 1.23.2
+go 1.23.5
 
 require (
 	github.com/alecthomas/kong v0.6.1
